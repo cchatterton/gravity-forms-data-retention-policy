@@ -64,6 +64,59 @@ function gfdrp_get_site_policy() {
 }
 
 /**
+ * Determine whether a form exactly inherits a site policy.
+ *
+ * The day value is irrelevant while the effective policy is to retain entries.
+ *
+ * @param array $form   Gravity Forms form object.
+ * @param array $policy Retention policy.
+ * @return bool
+ */
+function gfdrp_form_matches_policy( $form, $policy ) {
+	if ( ! is_array( $form ) ) {
+		return false;
+	}
+
+	$policy         = gfdrp_sanitize_settings( $policy );
+	$current_policy = isset( $form['personalData']['retention']['policy'] )
+		? sanitize_key( (string) $form['personalData']['retention']['policy'] )
+		: 'retain';
+
+	if ( $current_policy !== $policy['policy'] ) {
+		return false;
+	}
+
+	if ( 'retain' === $current_policy ) {
+		return true;
+	}
+
+	$current_days = isset( $form['personalData']['retention']['retain_entries_days'] )
+		? absint( $form['personalData']['retention']['retain_entries_days'] )
+		: 0;
+
+	return $current_days === $policy['retain_entries_days'];
+}
+
+/**
+ * Set a form to an exact policy while preserving unrelated personal-data fields.
+ *
+ * @param array $form   Gravity Forms form object.
+ * @param array $policy Retention policy.
+ * @return array
+ */
+function gfdrp_set_form_retention_policy( $form, $policy ) {
+	$policy = gfdrp_sanitize_settings( $policy );
+
+	if ( ! isset( $form['personalData'] ) || ! is_array( $form['personalData'] ) ) {
+		$form['personalData'] = array();
+	}
+
+	$form['personalData']['retention'] = $policy;
+
+	return $form;
+}
+
+/**
  * Apply the site ceiling to one form without weakening a stricter form rule.
  *
  * Policy strength is retain < trash < delete. Automated form policies are also
@@ -107,16 +160,13 @@ function gfdrp_apply_site_policy_to_form( $form, $site_policy = null ) {
 		? min( $current_days, $site_policy['retain_entries_days'] )
 		: $site_policy['retain_entries_days'];
 
-	if ( ! isset( $form['personalData'] ) || ! is_array( $form['personalData'] ) ) {
-		$form['personalData'] = array();
-	}
-
-	$form['personalData']['retention'] = array(
-		'policy'              => $effective_policy,
-		'retain_entries_days' => $effective_days,
+	return gfdrp_set_form_retention_policy(
+		$form,
+		array(
+			'policy'              => $effective_policy,
+			'retain_entries_days' => $effective_days,
+		)
 	);
-
-	return $form;
 }
 
 /**
@@ -140,9 +190,11 @@ function gfdrp_enforce_form_update( $form_meta, $form_id, $meta_name ) {
 /**
  * Synchronize every existing form on the current site.
  *
+ * @param array|null $previous_policy Policy previously saved at site level.
+ * @param array|null $site_policy     New policy, or the current saved policy.
  * @return array{checked:int,updated:int,failed:int}
  */
-function gfdrp_synchronize_existing_forms() {
+function gfdrp_synchronize_existing_forms( $previous_policy = null, $site_policy = null ) {
 	$result = array(
 		'checked' => 0,
 		'updated' => 0,
@@ -153,8 +205,9 @@ function gfdrp_synchronize_existing_forms() {
 		return $result;
 	}
 
-	$forms       = GFAPI::get_forms( null, null );
-	$site_policy = gfdrp_get_site_policy();
+	$forms           = GFAPI::get_forms( null, null );
+	$site_policy     = gfdrp_sanitize_settings( null === $site_policy ? gfdrp_get_site_policy() : $site_policy );
+	$previous_policy = null === $previous_policy ? null : gfdrp_sanitize_settings( $previous_policy );
 
 	if ( ! is_array( $forms ) ) {
 		return $result;
@@ -166,7 +219,9 @@ function gfdrp_synchronize_existing_forms() {
 		}
 
 		++$result['checked'];
-		$enforced_form = gfdrp_apply_site_policy_to_form( $form, $site_policy );
+		$enforced_form = null !== $previous_policy && gfdrp_form_matches_policy( $form, $previous_policy )
+			? gfdrp_set_form_retention_policy( $form, $site_policy )
+			: gfdrp_apply_site_policy_to_form( $form, $site_policy );
 
 		if ( $enforced_form === $form ) {
 			continue;
@@ -207,10 +262,15 @@ function gfdrp_settings_option_added( $option, $value ) {
  * @param mixed  $value     New value.
  */
 function gfdrp_settings_option_updated( $option, $old_value, $value ) {
-	unset( $old_value, $value );
+	if ( GFDRP_SETTINGS_OPTION !== $option ) {
+		return;
+	}
 
-	if ( GFDRP_SETTINGS_OPTION === $option ) {
-		gfdrp_synchronize_existing_forms();
+	$old_policy = gfdrp_sanitize_settings( $old_value );
+	$new_policy = gfdrp_sanitize_settings( $value );
+
+	if ( $old_policy !== $new_policy ) {
+		gfdrp_synchronize_existing_forms( $old_policy, $new_policy );
 	}
 }
 

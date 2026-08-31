@@ -6,7 +6,7 @@
 declare(strict_types=1);
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'GFDRP_VERSION', '1.0.0' );
+define( 'GFDRP_VERSION', '1.0.1' );
 define( 'GFDRP_PLUGIN_FILE', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/gravity-forms-data-retention-policy.php' );
 define( 'GFDRP_PLUGIN_DIR', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/' );
 define( 'GFDRP_SETTINGS_OPTION', 'gravityformsaddon_gfdrp_settings' );
@@ -167,7 +167,7 @@ foreach ( array( 1, 2 ) as $site_id ) {
 		'Every network site must receive the default policy.'
 	);
 	gfdrp_test_same(
-		'1.0.0',
+		'1.0.1',
 		$gfdrp_test_options[ $site_id ][ GFDRP_SITE_VERSION_OPTION ],
 		'Every network site must be marked initialized.'
 	);
@@ -189,5 +189,46 @@ gfdrp_synchronize_existing_forms();
 gfdrp_test_same( 'trash', $gfdrp_test_forms[1][0]['personalData']['retention']['policy'], 'Site one must use its local policy.' );
 gfdrp_test_same( 10, $gfdrp_test_forms[1][0]['personalData']['retention']['retain_entries_days'], 'Site one must use its local day ceiling.' );
 gfdrp_test_same( 'delete', $gfdrp_test_forms[2][0]['personalData']['retention']['policy'], 'Site two must remain independent.' );
+
+$old_policy = array( 'policy' => 'delete', 'retain_entries_days' => 28 );
+$new_policy = array( 'policy' => 'trash', 'retain_entries_days' => 60 );
+$gfdrp_test_forms[1] = array(
+	array(
+		'id'           => 1,
+		'personalData' => array( 'retention' => $old_policy ),
+	),
+	array(
+		'id'           => 3,
+		'personalData' => array(
+			'retention' => array( 'policy' => 'delete', 'retain_entries_days' => 7 ),
+		),
+	),
+	array(
+		'id'           => 4,
+		'personalData' => array(
+			'retention' => array( 'policy' => 'retain', 'retain_entries_days' => 0 ),
+		),
+	),
+);
+
+$migration_result = gfdrp_synchronize_existing_forms( $old_policy, $new_policy );
+gfdrp_test_same( 3, $migration_result['checked'], 'A policy change must check every form.' );
+gfdrp_test_same( 2, $migration_result['updated'], 'Inherited and newly non-compliant forms must be updated.' );
+gfdrp_test_same( $new_policy, $gfdrp_test_forms[1][0]['personalData']['retention'], 'An exact old-policy match must follow the new policy.' );
+gfdrp_test_same(
+	array( 'policy' => 'delete', 'retain_entries_days' => 7 ),
+	$gfdrp_test_forms[1][1]['personalData']['retention'],
+	'A custom stricter policy must not be loosened.'
+);
+gfdrp_test_same( $new_policy, $gfdrp_test_forms[1][2]['personalData']['retention'], 'A looser custom form must meet the new ceiling.' );
+
+$retain_policy = array( 'policy' => 'retain', 'retain_entries_days' => 60 );
+gfdrp_synchronize_existing_forms( $new_policy, $retain_policy );
+gfdrp_test_same( $retain_policy, $gfdrp_test_forms[1][0]['personalData']['retention'], 'Inherited forms must also follow a loosened retain policy.' );
+gfdrp_test_same(
+	array( 'policy' => 'delete', 'retain_entries_days' => 7 ),
+	$gfdrp_test_forms[1][1]['personalData']['retention'],
+	'A custom stricter policy must remain unchanged when the site policy becomes retain.'
+);
 
 echo "Retention and multisite tests passed.\n";

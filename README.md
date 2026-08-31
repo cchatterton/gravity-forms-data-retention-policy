@@ -1,7 +1,7 @@
 # Gravity Forms Data Retention Policy
 
 Author: AlphaSys
-Version: 1.0.0
+Version: 1.0.1
 Status: Production
 
 ## Purpose
@@ -13,6 +13,7 @@ Adds a site-wide retention policy to Gravity Forms and prevents individual forms
 - Adds Forms → Settings → Retention Policy.
 - Defaults to permanently deleting entries after 28 days.
 - Applies the site policy to existing forms when the plugin is initialized or the policy changes.
+- Moves forms that exactly matched the previous site policy to the new policy when settings are saved.
 - Enforces the policy whenever form metadata is saved, including new and imported forms.
 - Preserves form-level policies that are stricter than the site policy.
 - Stores settings independently on each site in a multisite network.
