@@ -1,4 +1,4 @@
 {
-  "version": "1.1.0",
-  "body": "Adds explicit policy testing and activation, entry and file-upload impact reports, active/inactive status, and a conservative scan for deactivating active forms with no detected site embed. Plugin activation no longer changes form policies."
+  "version": "1.2.0",
+  "body": "Adds enforced two-step policy activation with per-form selections and persistent exceptions. The active-form scan now reports every form and its detected usage locations, preselecting only unused forms for scan-gated deactivation."
 }

@@ -6,13 +6,14 @@
 declare(strict_types=1);
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'GFDRP_VERSION', '1.1.0' );
+define( 'GFDRP_VERSION', '1.2.0' );
 define( 'GFDRP_PLUGIN_FILE', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/gravity-forms-data-retention-policy.php' );
 define( 'GFDRP_PLUGIN_DIR', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/' );
 define( 'GFDRP_SETTINGS_OPTION', 'gravityformsaddon_gfdrp_settings' );
 define( 'GFDRP_SITE_VERSION_OPTION', 'gfdrp_site_version' );
 define( 'GFDRP_STATUS_OPTION', 'gfdrp_policy_status' );
 define( 'GFDRP_APPLIED_POLICY_OPTION', 'gfdrp_applied_policy' );
+define( 'GFDRP_EXCLUDED_FORMS_OPTION', 'gfdrp_excluded_form_ids' );
 define( 'DAY_IN_SECONDS', 86400 );
 define( 'MINUTE_IN_SECONDS', 60 );
 define( 'MB_IN_BYTES', 1048576 );
@@ -267,7 +268,7 @@ foreach ( array( 1, 2 ) as $site_id ) {
 		'Every network site must receive the default policy.'
 	);
 	gfdrp_test_same(
-		'1.1.0',
+		'1.2.0',
 		$gfdrp_test_options[ $site_id ][ GFDRP_SITE_VERSION_OPTION ],
 		'Every network site must be marked initialized.'
 	);
@@ -276,6 +277,7 @@ foreach ( array( 1, 2 ) as $site_id ) {
 		$gfdrp_test_options[ $site_id ][ GFDRP_STATUS_OPTION ],
 		'Every network site policy must start inactive.'
 	);
+	gfdrp_test_same( array(), $gfdrp_test_options[ $site_id ][ GFDRP_EXCLUDED_FORMS_OPTION ], 'Every network site must start without form exclusions.' );
 }
 
 gfdrp_test_same( 'retain', $gfdrp_test_forms[1][0]['personalData']['retention']['policy'], 'Plugin activation must not change forms.' );
@@ -296,6 +298,9 @@ $gfdrp_test_options[1][ GFDRP_STATUS_OPTION ]         = 'active';
 $gfdrp_test_options[1][ GFDRP_APPLIED_POLICY_OPTION ] = array( 'policy' => 'delete', 'retain_entries_days' => 28 );
 $enforced_while_active = gfdrp_enforce_form_update( $retain_form, 1, 'display_meta' );
 gfdrp_test_same( 'delete', $enforced_while_active['personalData']['retention']['policy'], 'Active enforcement must use the explicitly applied policy.' );
+$gfdrp_test_options[1][ GFDRP_EXCLUDED_FORMS_OPTION ] = array( 4 );
+gfdrp_test_same( $retain_form, gfdrp_enforce_form_update( $retain_form, 4, 'display_meta' ), 'An unchecked form must remain excluded from ongoing enforcement.' );
+$gfdrp_test_options[1][ GFDRP_EXCLUDED_FORMS_OPTION ] = array();
 gfdrp_settings_option_updated(
 	GFDRP_SETTINGS_OPTION,
 	array( 'policy' => 'delete', 'retain_entries_days' => 28 ),
@@ -343,6 +348,13 @@ gfdrp_test_same(
 );
 gfdrp_test_same( $new_policy, $gfdrp_test_forms[1][2]['personalData']['retention'], 'A looser custom form must meet the new ceiling.' );
 
+$gfdrp_test_forms[1][0]['personalData']['retention'] = $old_policy;
+$gfdrp_test_forms[1][2]['personalData']['retention'] = array( 'policy' => 'retain', 'retain_entries_days' => 0 );
+$selected_result = gfdrp_synchronize_existing_forms( $old_policy, $new_policy, array( 1 ) );
+gfdrp_test_same( 1, $selected_result['checked'], 'Activation must only inspect forms selected from the test.' );
+gfdrp_test_same( $new_policy, $gfdrp_test_forms[1][0]['personalData']['retention'], 'A selected form must receive the tested policy.' );
+gfdrp_test_same( 'retain', $gfdrp_test_forms[1][2]['personalData']['retention']['policy'], 'An unchecked form must remain unchanged.' );
+
 $retain_policy = array( 'policy' => 'retain', 'retain_entries_days' => 60 );
 gfdrp_synchronize_existing_forms( $new_policy, $retain_policy );
 gfdrp_test_same( $retain_policy, $gfdrp_test_forms[1][0]['personalData']['retention'], 'Inherited forms must also follow a loosened retain policy.' );
@@ -358,10 +370,11 @@ $extracted_ids = gfdrp_extract_form_ids(
 		'<!-- wp:gravityforms/form {"formId":"14"} /-->',
 		'gravity_form( 16, false );',
 		'a:1:{s:7:"form_id";i:18;}',
+		array( 'form_id' => 22 ),
 	)
 );
 sort( $extracted_ids );
-gfdrp_test_same( array( 12, 14, 16, 18 ), $extracted_ids, 'Supported embed formats must identify their form IDs.' );
+gfdrp_test_same( array( 12, 14, 16, 18, 22 ), $extracted_ids, 'Supported embed formats must identify their form IDs.' );
 
 $audit_form = array(
 	'id'     => 20,
@@ -384,8 +397,11 @@ $gfdrp_test_forms[1] = array(
 	array( 'id' => 4, 'title' => 'Not Referenced', 'is_active' => true, 'is_trash' => false ),
 );
 $unused_report = gfdrp_build_unused_forms_report();
-gfdrp_test_same( array( array( 'id' => 4, 'title' => 'Not Referenced' ) ), $unused_report['forms'], 'The usage scan must preserve referenced forms and report unreferenced forms.' );
-$deactivation_result = gfdrp_deactivate_unused_forms();
+gfdrp_test_same( 2, count( $unused_report['forms'] ), 'The usage scan must report every active form.' );
+gfdrp_test_same( true, $unused_report['forms'][0]['in_use'], 'A referenced form must be marked in use.' );
+gfdrp_test_same( 'Content: (untitled) (#101)', $unused_report['forms'][0]['uses'][0]['label'], 'The usage scan must identify where a form is referenced.' );
+gfdrp_test_same( false, $unused_report['forms'][1]['in_use'], 'An unreferenced active form must be preselected as unused.' );
+$deactivation_result = gfdrp_deactivate_unused_forms( array( 3, 4 ) );
 gfdrp_test_same( 1, $deactivation_result['deactivated'], 'The unused-form action must deactivate only the reported form.' );
 gfdrp_test_same( true, $gfdrp_test_forms[1][0]['is_active'], 'A referenced form must remain active.' );
 gfdrp_test_same( false, $gfdrp_test_forms[1][1]['is_active'], 'An unreferenced form must be deactivated.' );

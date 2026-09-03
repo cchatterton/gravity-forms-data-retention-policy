@@ -82,6 +82,18 @@ function gfdrp_get_applied_policy() {
 }
 
 /**
+ * Return form IDs excluded from the active site policy.
+ *
+ * @return int[]
+ */
+function gfdrp_get_excluded_form_ids() {
+	$value = get_option( GFDRP_EXCLUDED_FORMS_OPTION, array() );
+	$value = is_array( $value ) ? $value : array();
+
+	return array_values( array_filter( array_unique( array_map( 'absint', $value ) ) ) );
+}
+
+/**
  * Determine whether a form exactly inherits a site policy.
  *
  * The day value is irrelevant while the effective policy is to retain entries.
@@ -196,9 +208,7 @@ function gfdrp_apply_site_policy_to_form( $form, $site_policy = null ) {
  * @return mixed
  */
 function gfdrp_enforce_form_update( $form_meta, $form_id, $meta_name ) {
-	unset( $form_id );
-
-	if ( ! gfdrp_is_policy_active() || 'display_meta' !== $meta_name || ! is_array( $form_meta ) ) {
+	if ( ! gfdrp_is_policy_active() || 'display_meta' !== $meta_name || ! is_array( $form_meta ) || in_array( absint( $form_id ), gfdrp_get_excluded_form_ids(), true ) ) {
 		return $form_meta;
 	}
 
@@ -210,9 +220,10 @@ function gfdrp_enforce_form_update( $form_meta, $form_id, $meta_name ) {
  *
  * @param array|null $previous_policy Policy previously saved at site level.
  * @param array|null $site_policy     New policy, or the current saved policy.
+ * @param int[]|null $included_ids    Optional form IDs selected from a policy test.
  * @return array{checked:int,updated:int,failed:int}
  */
-function gfdrp_synchronize_existing_forms( $previous_policy = null, $site_policy = null ) {
+function gfdrp_synchronize_existing_forms( $previous_policy = null, $site_policy = null, $included_ids = null ) {
 	$result = array(
 		'checked' => 0,
 		'updated' => 0,
@@ -226,6 +237,7 @@ function gfdrp_synchronize_existing_forms( $previous_policy = null, $site_policy
 	$forms           = GFAPI::get_forms( null, null );
 	$site_policy     = gfdrp_sanitize_settings( null === $site_policy ? gfdrp_get_site_policy() : $site_policy );
 	$previous_policy = null === $previous_policy ? null : gfdrp_sanitize_settings( $previous_policy );
+	$included_ids    = is_array( $included_ids ) ? array_values( array_unique( array_map( 'absint', $included_ids ) ) ) : null;
 
 	if ( ! is_array( $forms ) ) {
 		return $result;
@@ -233,6 +245,10 @@ function gfdrp_synchronize_existing_forms( $previous_policy = null, $site_policy
 
 	foreach ( $forms as $form ) {
 		if ( ! is_array( $form ) ) {
+			continue;
+		}
+
+		if ( null !== $included_ids && ! in_array( absint( $form['id'] ?? 0 ), $included_ids, true ) ) {
 			continue;
 		}
 

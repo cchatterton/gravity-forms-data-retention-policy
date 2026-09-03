@@ -27,6 +27,10 @@ function gfdrp_initialize_current_site() {
 		update_option( GFDRP_STATUS_OPTION, 'inactive' );
 	}
 
+	if ( false === get_option( GFDRP_EXCLUDED_FORMS_OPTION, false ) ) {
+		update_option( GFDRP_EXCLUDED_FORMS_OPTION, array() );
+	}
+
 	update_option( GFDRP_SITE_VERSION_OPTION, GFDRP_VERSION );
 }
 

@@ -2,6 +2,15 @@
 
 All notable changes to Gravity Forms Data Retention Policy are recorded here.
 
+## 1.2.0 - 2026-09-04
+
+- Made policy activation an enforced two-step test-and-activate workflow.
+- Added default-selected per-form checkboxes to the policy impact report.
+- Added persistent form exceptions so unchecked forms remain outside ongoing enforcement.
+- Changed the usage scan to show every active form and each detected usage location.
+- Added default-selected deactivation checkboxes only for forms with no detected usage.
+- Required a fresh server-side report and confirmation rescan before selected forms can be deactivated.
+
 ## 1.1.0 - 2026-09-03
 
 - Removed automatic form-policy changes during WordPress plugin activation.

@@ -19,7 +19,11 @@ function gfdrp_extract_form_ids( $value ) {
 	$ids = array();
 
 	if ( is_array( $value ) || is_object( $value ) ) {
-		foreach ( (array) $value as $item ) {
+		foreach ( (array) $value as $key => $item ) {
+			if ( in_array( (string) $key, array( 'formId', 'form_id', 'form_id_attr' ), true ) && is_scalar( $item ) && absint( $item ) ) {
+				$ids[] = absint( $item );
+			}
+
 			$ids = array_merge( $ids, gfdrp_extract_form_ids( $item ) );
 		}
 
@@ -75,12 +79,31 @@ function gfdrp_extract_form_ids_from_blocks( $blocks ) {
 }
 
 /**
+ * Add a detected usage location for each form ID.
+ *
+ * @param array  $usage Form ID keyed usage map.
+ * @param int[]  $ids   Referenced form IDs.
+ * @param string $label Human-readable usage location.
+ * @param string $url   Optional admin URL for the usage location.
+ */
+function gfdrp_add_usage_references( &$usage, $ids, $label, $url = '' ) {
+	foreach ( array_values( array_filter( array_unique( array_map( 'absint', $ids ) ) ) ) as $form_id ) {
+		$usage[ $form_id ] = isset( $usage[ $form_id ] ) && is_array( $usage[ $form_id ] ) ? $usage[ $form_id ] : array();
+		$key               = md5( $label . "\0" . $url );
+		$usage[ $form_id ][ $key ] = array(
+			'label' => (string) $label,
+			'url'   => (string) $url,
+		);
+	}
+}
+
+/**
  * Find form references in posts, post meta, widgets, theme settings, and themes.
  *
- * @return int[]
+ * @return array<int,array<int,array{label:string,url:string}>>
  */
-function gfdrp_find_referenced_form_ids() {
-	$referenced = array();
+function gfdrp_find_form_usage() {
+	$usage      = array();
 	$post_types = get_post_types( array(), 'names' );
 	$post_ids   = get_posts(
 		array(
@@ -104,16 +127,28 @@ function gfdrp_find_referenced_form_ids() {
 			continue;
 		}
 
-		$referenced = array_merge( $referenced, gfdrp_extract_form_ids( $post->post_content ) );
-		$referenced = array_merge( $referenced, gfdrp_extract_form_ids_from_blocks( parse_blocks( $post->post_content ) ) );
-		$referenced = array_merge( $referenced, gfdrp_extract_form_ids( get_post_meta( $post_id ) ) );
+		$post_type  = (string) ( $post->post_type ?? 'content' );
+		$post_title = (string) ( $post->post_title ?? '' );
+		$post_title = '' !== $post_title ? $post_title : __( '(untitled)', 'gravity-forms-data-retention-policy' );
+		$label      = sprintf( '%1$s: %2$s (#%3$d)', ucfirst( $post_type ), $post_title, (int) $post_id );
+		$url        = function_exists( 'get_edit_post_link' ) ? (string) get_edit_post_link( $post_id, 'raw' ) : '';
+		$ids        = array_merge(
+			gfdrp_extract_form_ids( $post->post_content ),
+			gfdrp_extract_form_ids_from_blocks( parse_blocks( $post->post_content ) ),
+			gfdrp_extract_form_ids( get_post_meta( $post_id ) )
+		);
+		gfdrp_add_usage_references( $usage, $ids, $label, $url );
 	}
 
 	foreach ( array( 'widget_gravityforms', 'widget_text', 'widget_block', 'widget_custom_html' ) as $option_name ) {
-		$referenced = array_merge( $referenced, gfdrp_extract_form_ids( get_option( $option_name, array() ) ) );
+		gfdrp_add_usage_references(
+			$usage,
+			gfdrp_extract_form_ids( get_option( $option_name, array() ) ),
+			sprintf( __( 'Widget setting: %s', 'gravity-forms-data-retention-policy' ), $option_name )
+		);
 	}
 
-	$referenced = array_merge( $referenced, gfdrp_extract_form_ids( get_theme_mods() ) );
+	gfdrp_add_usage_references( $usage, gfdrp_extract_form_ids( get_theme_mods() ), __( 'Active theme settings', 'gravity-forms-data-retention-policy' ) );
 
 	foreach ( array_unique( array_filter( array( get_stylesheet_directory(), get_template_directory() ) ) ) as $theme_directory ) {
 		try {
@@ -130,13 +165,31 @@ function gfdrp_find_referenced_form_ids() {
 				$content = file_get_contents( $file->getPathname() );
 
 				if ( false !== $content ) {
-					$referenced = array_merge( $referenced, gfdrp_extract_form_ids( $content ) );
+					$relative_path = ltrim( substr( $file->getPathname(), strlen( $theme_directory ) ), DIRECTORY_SEPARATOR );
+					gfdrp_add_usage_references(
+						$usage,
+						gfdrp_extract_form_ids( $content ),
+						sprintf( __( 'Active theme file: %s', 'gravity-forms-data-retention-policy' ), $relative_path )
+					);
 				}
 			}
 		}
 	}
 
-	return array_values( array_filter( array_unique( array_map( 'absint', $referenced ) ) ) );
+	foreach ( $usage as $form_id => $locations ) {
+		$usage[ $form_id ] = array_values( $locations );
+	}
+
+	return $usage;
+}
+
+/**
+ * Return the IDs of all forms with a detected usage location.
+ *
+ * @return int[]
+ */
+function gfdrp_find_referenced_form_ids() {
+	return array_map( 'absint', array_keys( gfdrp_find_form_usage() ) );
 }
 
 /**
@@ -157,15 +210,18 @@ function gfdrp_build_unused_forms_report() {
 		return $report;
 	}
 
-	$report['referenced_ids'] = gfdrp_find_referenced_form_ids();
+	$usage                    = gfdrp_find_form_usage();
+	$report['referenced_ids'] = array_map( 'absint', array_keys( $usage ) );
 
 	foreach ( GFAPI::get_forms( true, false ) as $form ) {
 		$form_id = absint( $form['id'] ?? 0 );
 
-		if ( $form_id && ! in_array( $form_id, $report['referenced_ids'], true ) ) {
+		if ( $form_id ) {
 			$report['forms'][] = array(
-				'id'    => $form_id,
-				'title' => (string) ( $form['title'] ?? '' ),
+				'id'     => $form_id,
+				'title'  => (string) ( $form['title'] ?? '' ),
+				'in_use' => ! empty( $usage[ $form_id ] ),
+				'uses'   => $usage[ $form_id ] ?? array(),
 			);
 		}
 	}
@@ -176,10 +232,12 @@ function gfdrp_build_unused_forms_report() {
 /**
  * Deactivate forms that still have no detected usage at execution time.
  *
+ * @param int[] $selected_ids Form IDs selected from the preceding scan.
  * @return array{deactivated:int,failed:int,scan_error:bool}
  */
-function gfdrp_deactivate_unused_forms() {
+function gfdrp_deactivate_unused_forms( $selected_ids ) {
 	$report = gfdrp_build_unused_forms_report();
+	$selected_ids = array_values( array_filter( array_unique( array_map( 'absint', is_array( $selected_ids ) ? $selected_ids : array() ) ) ) );
 	$result = array(
 		'deactivated' => 0,
 		'failed'      => 0,
@@ -191,6 +249,10 @@ function gfdrp_deactivate_unused_forms() {
 	}
 
 	foreach ( $report['forms'] as $form ) {
+		if ( ! in_array( $form['id'], $selected_ids, true ) || ! empty( $form['in_use'] ) ) {
+			continue;
+		}
+
 		$updated = GFAPI::update_form_property( $form['id'], 'is_active', false );
 
 		if ( is_wp_error( $updated ) || false === $updated ) {

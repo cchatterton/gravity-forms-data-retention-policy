@@ -119,7 +119,26 @@ final class GFDRP_Addon extends GFAddOn {
 		$html = gfdrp_get_policy_controls_html();
 
 		if ( $echo ) {
-			echo wp_kses_post( $html );
+			$allowed_html = wp_kses_allowed_html( 'post' );
+			$allowed_html['input'] = array(
+				'aria-label' => true,
+				'checked'    => true,
+				'disabled'   => true,
+				'name'       => true,
+				'type'       => true,
+				'value'      => true,
+			);
+			$allowed_html['button'] = array(
+				'class'          => true,
+				'formaction'     => true,
+				'formmethod'     => true,
+				'formnovalidate' => true,
+				'name'           => true,
+				'type'           => true,
+				'value'          => true,
+			);
+
+			echo wp_kses( $html, $allowed_html );
 		}
 
 		return $html;
@@ -132,6 +151,7 @@ final class GFDRP_Addon extends GFAddOn {
 		delete_option( GFDRP_SITE_VERSION_OPTION );
 		delete_option( GFDRP_STATUS_OPTION );
 		delete_option( GFDRP_APPLIED_POLICY_OPTION );
+		delete_option( GFDRP_EXCLUDED_FORMS_OPTION );
 	}
 }
 
