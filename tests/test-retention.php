@@ -6,11 +6,16 @@
 declare(strict_types=1);
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'GFDRP_VERSION', '1.0.1' );
+define( 'GFDRP_VERSION', '1.1.0' );
 define( 'GFDRP_PLUGIN_FILE', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/gravity-forms-data-retention-policy.php' );
 define( 'GFDRP_PLUGIN_DIR', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/' );
 define( 'GFDRP_SETTINGS_OPTION', 'gravityformsaddon_gfdrp_settings' );
 define( 'GFDRP_SITE_VERSION_OPTION', 'gfdrp_site_version' );
+define( 'GFDRP_STATUS_OPTION', 'gfdrp_policy_status' );
+define( 'GFDRP_APPLIED_POLICY_OPTION', 'gfdrp_applied_policy' );
+define( 'DAY_IN_SECONDS', 86400 );
+define( 'MINUTE_IN_SECONDS', 60 );
+define( 'MB_IN_BYTES', 1048576 );
 
 $gfdrp_test_blog_id = 1;
 $gfdrp_test_options = array( 1 => array(), 2 => array() );
@@ -38,6 +43,12 @@ $gfdrp_test_forms   = array(
 		),
 	),
 );
+$gfdrp_test_entries = array();
+
+function __( $text, $domain = '' ) {
+	unset( $domain );
+	return $text;
+}
 
 function sanitize_key( $value ) {
 	return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $value ) );
@@ -83,15 +94,66 @@ function restore_current_blog() {
 	$gfdrp_test_blog_id = 1;
 }
 
+function get_post_types( $arguments = array(), $output = 'names' ) {
+	unset( $arguments, $output );
+	return array( 'post' => 'post' );
+}
+
+function get_posts( $arguments = array() ) {
+	unset( $arguments );
+	return array( 101 );
+}
+
+function get_post( $post_id ) {
+	return (object) array(
+		'ID'           => $post_id,
+		'post_status'  => 'publish',
+		'post_content' => '[gravityform id="3" title="false"]',
+	);
+}
+
+function get_post_meta( $post_id ) {
+	unset( $post_id );
+	return array();
+}
+
+function parse_blocks( $content ) {
+	unset( $content );
+	return array();
+}
+
+function get_theme_mods() {
+	return array();
+}
+
+function get_stylesheet_directory() {
+	return '/gfdrp-test-theme-does-not-exist';
+}
+
+function get_template_directory() {
+	return '/gfdrp-test-theme-does-not-exist';
+}
+
 class WP_Error {}
 
 class GFAPI {
 	public static function get_forms( $active = true, $trash = false ) {
-		if ( null !== $active || null !== $trash ) {
-			throw new RuntimeException( 'Synchronization must request active, inactive, and trashed forms.' );
-		}
 		global $gfdrp_test_blog_id, $gfdrp_test_forms;
-		return $gfdrp_test_forms[ $gfdrp_test_blog_id ];
+		$forms = $gfdrp_test_forms[ $gfdrp_test_blog_id ];
+
+		if ( null === $active && null === $trash ) {
+			return $forms;
+		}
+
+		return array_values(
+			array_filter(
+				$forms,
+				static function ( $form ) use ( $active, $trash ) {
+					return (bool) ( $form['is_active'] ?? true ) === (bool) $active
+						&& (bool) ( $form['is_trash'] ?? false ) === (bool) $trash;
+				}
+			)
+		);
 	}
 
 	public static function update_form( $form ) {
@@ -104,10 +166,42 @@ class GFAPI {
 		}
 		return new WP_Error();
 	}
+
+	public static function get_entries( $form_id, $criteria = array(), $sorting = null, $paging = null, &$total_count = null ) {
+		global $gfdrp_test_entries;
+		unset( $sorting );
+		$matches = array_values(
+			array_filter(
+				$gfdrp_test_entries,
+				static function ( $entry ) use ( $form_id, $criteria ) {
+					return (int) $entry['form_id'] === (int) $form_id
+						&& $entry['status'] === $criteria['status']
+						&& $entry['date_created'] <= $criteria['end_date'];
+				}
+			)
+		);
+		$total_count = count( $matches );
+		$offset      = (int) ( $paging['offset'] ?? 0 );
+		$page_size   = (int) ( $paging['page_size'] ?? 20 );
+		return array_slice( $matches, $offset, $page_size );
+	}
+
+	public static function update_form_property( $form_id, $property, $value ) {
+		global $gfdrp_test_blog_id, $gfdrp_test_forms;
+		foreach ( $gfdrp_test_forms[ $gfdrp_test_blog_id ] as $index => $form ) {
+			if ( (int) $form['id'] === (int) $form_id ) {
+				$gfdrp_test_forms[ $gfdrp_test_blog_id ][ $index ][ $property ] = $value;
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 require_once GFDRP_PLUGIN_DIR . 'functions/retention.php';
 require_once GFDRP_PLUGIN_DIR . 'functions/setup.php';
+require_once GFDRP_PLUGIN_DIR . 'functions/audit.php';
+require_once GFDRP_PLUGIN_DIR . 'functions/form-usage.php';
 
 function gfdrp_test_same( $expected, $actual, $message ) {
 	if ( $expected !== $actual ) {
@@ -158,6 +252,12 @@ gfdrp_test_same(
 	'Non-display form metadata must not be changed.'
 );
 
+gfdrp_test_same(
+	$retain_form,
+	gfdrp_enforce_form_update( $retain_form, 4, 'display_meta' ),
+	'Inactive policy enforcement must not change form metadata.'
+);
+
 gfdrp_activate( true );
 
 foreach ( array( 1, 2 ) as $site_id ) {
@@ -167,28 +267,49 @@ foreach ( array( 1, 2 ) as $site_id ) {
 		'Every network site must receive the default policy.'
 	);
 	gfdrp_test_same(
-		'1.0.1',
+		'1.1.0',
 		$gfdrp_test_options[ $site_id ][ GFDRP_SITE_VERSION_OPTION ],
 		'Every network site must be marked initialized.'
 	);
 	gfdrp_test_same(
-		'delete',
-		$gfdrp_test_forms[ $site_id ][0]['personalData']['retention']['policy'],
-		'Every network site form must meet the default action.'
-	);
-	gfdrp_test_same(
-		28,
-		$gfdrp_test_forms[ $site_id ][0]['personalData']['retention']['retain_entries_days'],
-		'Every network site form must meet the default day ceiling.'
+		'inactive',
+		$gfdrp_test_options[ $site_id ][ GFDRP_STATUS_OPTION ],
+		'Every network site policy must start inactive.'
 	);
 }
+
+gfdrp_test_same( 'retain', $gfdrp_test_forms[1][0]['personalData']['retention']['policy'], 'Plugin activation must not change forms.' );
+gfdrp_test_same( 'trash', $gfdrp_test_forms[2][0]['personalData']['retention']['policy'], 'Network activation must not change forms on subsites.' );
+
+$legacy_policy         = array( 'policy' => 'trash', 'retain_entries_days' => 45 );
+$gfdrp_test_options[3] = array(
+	GFDRP_SETTINGS_OPTION     => $legacy_policy,
+	GFDRP_SITE_VERSION_OPTION => '1.0.1',
+);
+switch_to_blog( 3 );
+gfdrp_initialize_current_site();
+gfdrp_test_same( $legacy_policy, get_option( GFDRP_APPLIED_POLICY_OPTION ), 'An upgrade must remember the policy enforced by the previous release.' );
+gfdrp_test_same( 'inactive', get_option( GFDRP_STATUS_OPTION ), 'An upgraded site must enter the explicit workflow inactive.' );
+restore_current_blog();
+
+$gfdrp_test_options[1][ GFDRP_STATUS_OPTION ]         = 'active';
+$gfdrp_test_options[1][ GFDRP_APPLIED_POLICY_OPTION ] = array( 'policy' => 'delete', 'retain_entries_days' => 28 );
+$enforced_while_active = gfdrp_enforce_form_update( $retain_form, 1, 'display_meta' );
+gfdrp_test_same( 'delete', $enforced_while_active['personalData']['retention']['policy'], 'Active enforcement must use the explicitly applied policy.' );
+gfdrp_settings_option_updated(
+	GFDRP_SETTINGS_OPTION,
+	array( 'policy' => 'delete', 'retain_entries_days' => 28 ),
+	array( 'policy' => 'trash', 'retain_entries_days' => 10 )
+);
+gfdrp_test_same( 'inactive', $gfdrp_test_options[1][ GFDRP_STATUS_OPTION ], 'Saving changed settings must require a new test and activation.' );
+gfdrp_test_same( 'retain', $gfdrp_test_forms[1][0]['personalData']['retention']['policy'], 'Saving changed settings must not update forms.' );
 
 $gfdrp_test_options[1][ GFDRP_SETTINGS_OPTION ] = array( 'policy' => 'trash', 'retain_entries_days' => 10 );
 $gfdrp_test_forms[1][0] = $retain_form + array( 'id' => 1 );
 gfdrp_synchronize_existing_forms();
 gfdrp_test_same( 'trash', $gfdrp_test_forms[1][0]['personalData']['retention']['policy'], 'Site one must use its local policy.' );
 gfdrp_test_same( 10, $gfdrp_test_forms[1][0]['personalData']['retention']['retain_entries_days'], 'Site one must use its local day ceiling.' );
-gfdrp_test_same( 'delete', $gfdrp_test_forms[2][0]['personalData']['retention']['policy'], 'Site two must remain independent.' );
+gfdrp_test_same( 'trash', $gfdrp_test_forms[2][0]['personalData']['retention']['policy'], 'Site two must remain independent.' );
 
 $old_policy = array( 'policy' => 'delete', 'retain_entries_days' => 28 );
 $new_policy = array( 'policy' => 'trash', 'retain_entries_days' => 60 );
@@ -230,5 +351,43 @@ gfdrp_test_same(
 	$gfdrp_test_forms[1][1]['personalData']['retention'],
 	'A custom stricter policy must remain unchanged when the site policy becomes retain.'
 );
+
+$extracted_ids = gfdrp_extract_form_ids(
+	array(
+		'[gravityform id="12" title="false"]',
+		'<!-- wp:gravityforms/form {"formId":"14"} /-->',
+		'gravity_form( 16, false );',
+		'a:1:{s:7:"form_id";i:18;}',
+	)
+);
+sort( $extracted_ids );
+gfdrp_test_same( array( 12, 14, 16, 18 ), $extracted_ids, 'Supported embed formats must identify their form IDs.' );
+
+$audit_form = array(
+	'id'     => 20,
+	'fields' => array(
+		array( 'id' => 5, 'type' => 'fileupload' ),
+		array( 'id' => 6, 'type' => 'text' ),
+	),
+);
+$gfdrp_test_entries = array(
+	array( 'form_id' => 20, 'status' => 'active', 'date_created' => gmdate( 'Y-m-d H:i:s', time() - 40 * DAY_IN_SECONDS ), '5' => 'upload.pdf' ),
+	array( 'form_id' => 20, 'status' => 'spam', 'date_created' => gmdate( 'Y-m-d H:i:s', time() - 35 * DAY_IN_SECONDS ), '5' => '' ),
+	array( 'form_id' => 20, 'status' => 'active', 'date_created' => gmdate( 'Y-m-d H:i:s', time() - 5 * DAY_IN_SECONDS ), '5' => 'new.pdf' ),
+);
+$entry_audit = gfdrp_audit_form_entries( $audit_form, array( 'policy' => 'delete', 'retain_entries_days' => 28 ) );
+gfdrp_test_same( 2, $entry_audit['entries'], 'The audit must count entries already beyond the retention period.' );
+gfdrp_test_same( 1, $entry_audit['file_entries'], 'The audit must identify affected entries with file uploads.' );
+
+$gfdrp_test_forms[1] = array(
+	array( 'id' => 3, 'title' => 'Embedded', 'is_active' => true, 'is_trash' => false ),
+	array( 'id' => 4, 'title' => 'Not Referenced', 'is_active' => true, 'is_trash' => false ),
+);
+$unused_report = gfdrp_build_unused_forms_report();
+gfdrp_test_same( array( array( 'id' => 4, 'title' => 'Not Referenced' ) ), $unused_report['forms'], 'The usage scan must preserve referenced forms and report unreferenced forms.' );
+$deactivation_result = gfdrp_deactivate_unused_forms();
+gfdrp_test_same( 1, $deactivation_result['deactivated'], 'The unused-form action must deactivate only the reported form.' );
+gfdrp_test_same( true, $gfdrp_test_forms[1][0]['is_active'], 'A referenced form must remain active.' );
+gfdrp_test_same( false, $gfdrp_test_forms[1][1]['is_active'], 'An unreferenced form must be deactivated.' );
 
 echo "Retention and multisite tests passed.\n";

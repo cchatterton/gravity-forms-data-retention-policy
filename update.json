@@ -1,4 +1,4 @@
 {
-  "version": "1.0.1",
-  "body": "Forms that exactly inherited the previous site policy now follow policy changes, while custom form policies remain independent unless they exceed the new site ceiling."
+  "version": "1.1.0",
+  "body": "Adds explicit policy testing and activation, entry and file-upload impact reports, active/inactive status, and a conservative scan for deactivating active forms with no detected site embed. Plugin activation no longer changes form policies."
 }

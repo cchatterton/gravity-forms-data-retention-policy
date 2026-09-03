@@ -64,6 +64,24 @@ function gfdrp_get_site_policy() {
 }
 
 /**
+ * Return whether retention enforcement is currently active on this site.
+ *
+ * @return bool
+ */
+function gfdrp_is_policy_active() {
+	return 'active' === get_option( GFDRP_STATUS_OPTION, 'inactive' );
+}
+
+/**
+ * Return the policy that was explicitly activated.
+ *
+ * @return array{policy:string,retain_entries_days:int}
+ */
+function gfdrp_get_applied_policy() {
+	return gfdrp_sanitize_settings( get_option( GFDRP_APPLIED_POLICY_OPTION, gfdrp_get_site_policy() ) );
+}
+
+/**
  * Determine whether a form exactly inherits a site policy.
  *
  * The day value is irrelevant while the effective policy is to retain entries.
@@ -180,11 +198,11 @@ function gfdrp_apply_site_policy_to_form( $form, $site_policy = null ) {
 function gfdrp_enforce_form_update( $form_meta, $form_id, $meta_name ) {
 	unset( $form_id );
 
-	if ( 'display_meta' !== $meta_name || ! is_array( $form_meta ) ) {
+	if ( ! gfdrp_is_policy_active() || 'display_meta' !== $meta_name || ! is_array( $form_meta ) ) {
 		return $form_meta;
 	}
 
-	return gfdrp_apply_site_policy_to_form( $form_meta );
+	return gfdrp_apply_site_policy_to_form( $form_meta, gfdrp_get_applied_policy() );
 }
 
 /**
@@ -241,21 +259,7 @@ function gfdrp_synchronize_existing_forms( $previous_policy = null, $site_policy
 }
 
 /**
- * Reapply the site ceiling after the Add-On Framework changes its option.
- *
- * @param string $option Option name.
- * @param mixed  $value  Option value.
- */
-function gfdrp_settings_option_added( $option, $value ) {
-	unset( $value );
-
-	if ( GFDRP_SETTINGS_OPTION === $option ) {
-		gfdrp_synchronize_existing_forms();
-	}
-}
-
-/**
- * Reapply the site ceiling after the Add-On Framework changes its option.
+ * Mark the policy inactive after its saved configuration changes.
  *
  * @param string $option    Option name.
  * @param mixed  $old_value Previous value.
@@ -270,7 +274,7 @@ function gfdrp_settings_option_updated( $option, $old_value, $value ) {
 	$new_policy = gfdrp_sanitize_settings( $value );
 
 	if ( $old_policy !== $new_policy ) {
-		gfdrp_synchronize_existing_forms( $old_policy, $new_policy );
+		update_option( GFDRP_STATUS_OPTION, 'inactive' );
 	}
 }
 
@@ -280,6 +284,5 @@ function gfdrp_settings_option_updated( $option, $old_value, $value ) {
 function gfdrp_register_retention_hooks() {
 	add_filter( 'pre_update_option_' . GFDRP_SETTINGS_OPTION, 'gfdrp_sanitize_settings_option' );
 	add_filter( 'gform_form_update_meta', 'gfdrp_enforce_form_update', 10, 3 );
-	add_action( 'added_option', 'gfdrp_settings_option_added', 10, 2 );
 	add_action( 'updated_option', 'gfdrp_settings_option_updated', 10, 3 );
 }

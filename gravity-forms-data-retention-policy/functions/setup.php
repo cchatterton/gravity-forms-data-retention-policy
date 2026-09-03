@@ -13,17 +13,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Initialize settings and forms for the current site.
  */
 function gfdrp_initialize_current_site() {
+	$installed_version = get_option( GFDRP_SITE_VERSION_OPTION, '' );
+
 	if ( false === get_option( GFDRP_SETTINGS_OPTION, false ) ) {
 		update_option( GFDRP_SETTINGS_OPTION, gfdrp_default_settings() );
 	}
 
-	if ( class_exists( 'GFAPI' ) ) {
-		$result = gfdrp_synchronize_existing_forms();
-
-		if ( 0 === $result['failed'] ) {
-			update_option( GFDRP_SITE_VERSION_OPTION, GFDRP_VERSION );
-		}
+	if ( '' !== $installed_version && version_compare( $installed_version, '1.1.0', '<' ) && false === get_option( GFDRP_APPLIED_POLICY_OPTION, false ) ) {
+		update_option( GFDRP_APPLIED_POLICY_OPTION, gfdrp_get_site_policy() );
 	}
+
+	if ( false === get_option( GFDRP_STATUS_OPTION, false ) ) {
+		update_option( GFDRP_STATUS_OPTION, 'inactive' );
+	}
+
+	update_option( GFDRP_SITE_VERSION_OPTION, GFDRP_VERSION );
 }
 
 /**

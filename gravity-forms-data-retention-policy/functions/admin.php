@@ -97,9 +97,32 @@ final class GFDRP_Addon extends GFAddOn {
 						),
 						'description'   => esc_html__( 'Gravity Forms applies automated retention during its daily scheduled task. This value is ignored when entries are retained indefinitely.', 'gravity-forms-data-retention-policy' ),
 					),
+					array(
+						'name'  => 'policy_controls',
+						'label' => esc_html__( 'Policy status and activation', 'gravity-forms-data-retention-policy' ),
+						'type'  => 'policy_controls',
+					),
 				),
 			),
 		);
+	}
+
+	/**
+	 * Render the policy workflow and unused-form controls.
+	 *
+	 * @param array $field Field configuration.
+	 * @param bool  $echo  Whether to echo the generated markup.
+	 * @return string
+	 */
+	public function settings_policy_controls( $field, $echo = true ) {
+		unset( $field );
+		$html = gfdrp_get_policy_controls_html();
+
+		if ( $echo ) {
+			echo wp_kses_post( $html );
+		}
+
+		return $html;
 	}
 
 	/**
@@ -107,6 +130,8 @@ final class GFDRP_Addon extends GFAddOn {
 	 */
 	public function uninstall() {
 		delete_option( GFDRP_SITE_VERSION_OPTION );
+		delete_option( GFDRP_STATUS_OPTION );
+		delete_option( GFDRP_APPLIED_POLICY_OPTION );
 	}
 }
 
