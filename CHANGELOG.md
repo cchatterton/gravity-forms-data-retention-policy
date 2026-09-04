@@ -2,6 +2,11 @@
 
 All notable changes to Gravity Forms Data Retention Policy are recorded here.
 
+## 1.2.5 - 2026-09-04
+
+- Always displayed affected-entry dates as an explicit oldest-to-youngest range, including when both dates match.
+- Clarified the date-range column heading.
+
 ## 1.2.4 - 2026-09-04
 
 - Added form status and oldest-to-youngest affected-entry dates to the policy impact table.

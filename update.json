@@ -1,4 +1,4 @@
 {
-  "version": "1.2.4",
-  "body": "Updates the policy impact table with form status and affected-entry date ranges, removes the Proposed column, retains exact active-policy matches during loosening, and fixes primary-button contrast."
+  "version": "1.2.5",
+  "body": "Always displays affected-entry dates as an explicit oldest-to-youngest range, including when both dates match."
 }

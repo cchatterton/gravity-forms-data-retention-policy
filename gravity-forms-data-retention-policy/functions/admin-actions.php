@@ -265,9 +265,7 @@ function gfdrp_format_entry_date_range( $oldest, $youngest ) {
 	$oldest_date   = wp_date( $date_format, strtotime( $oldest . ' UTC' ) );
 	$youngest_date = wp_date( $date_format, strtotime( $youngest . ' UTC' ) );
 
-	return $oldest_date === $youngest_date
-		? $oldest_date
-		: sprintf( '%1$s – %2$s', $oldest_date, $youngest_date );
+	return sprintf( '%1$s – %2$s', $oldest_date, $youngest_date );
 }
 
 /**
@@ -318,7 +316,7 @@ function gfdrp_get_policy_report_html( $report ) {
 	if ( empty( $report['forms'] ) ) {
 		$html .= '<p>' . esc_html__( 'No forms require a policy change.', 'gravity-forms-data-retention-policy' ) . '</p>';
 	} else {
-		$html .= '<table class="widefat striped"><thead><tr><th class="check-column">' . esc_html__( 'Apply defaults', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Form', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Status', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Current policy', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Entries affected', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Affected entry date range', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'With files', 'gravity-forms-data-retention-policy' ) . '</th></tr></thead><tbody>';
+		$html .= '<table class="widefat striped"><thead><tr><th class="check-column">' . esc_html__( 'Apply defaults', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Form', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Status', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Current policy', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Entries affected', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Oldest entry – youngest entry', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'With files', 'gravity-forms-data-retention-policy' ) . '</th></tr></thead><tbody>';
 
 		foreach ( $report['forms'] as $form ) {
 			$form_id    = absint( $form['id'] ?? 0 );

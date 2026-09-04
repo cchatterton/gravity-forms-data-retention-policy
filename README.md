@@ -1,7 +1,7 @@
 # Gravity Forms Data Retention Policy
 
 Author: AlphaSys
-Version: 1.2.4
+Version: 1.2.5
 Status: Production
 
 ## Purpose
