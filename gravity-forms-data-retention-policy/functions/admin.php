@@ -121,12 +121,17 @@ final class GFDRP_Addon extends GFAddOn {
 		if ( $echo ) {
 			$allowed_html = wp_kses_allowed_html( 'post' );
 			$allowed_html['input'] = array(
-				'aria-label' => true,
-				'checked'    => true,
-				'disabled'   => true,
-				'name'       => true,
-				'type'       => true,
-				'value'      => true,
+				'aria-label'     => true,
+				'checked'        => true,
+				'class'          => true,
+				'disabled'       => true,
+				'formaction'     => true,
+				'formmethod'     => true,
+				'formnovalidate' => true,
+				'name'           => true,
+				'style'          => true,
+				'type'           => true,
+				'value'          => true,
 			);
 			$allowed_html['button'] = array(
 				'class'          => true,
@@ -134,10 +139,10 @@ final class GFDRP_Addon extends GFAddOn {
 				'formmethod'     => true,
 				'formnovalidate' => true,
 				'name'           => true,
+				'style'          => true,
 				'type'           => true,
 				'value'          => true,
 			);
-
 			echo wp_kses( $html, $allowed_html );
 		}
 

@@ -1,4 +1,4 @@
 {
-  "version": "1.2.5",
-  "body": "Always displays affected-entry dates as an explicit oldest-to-youngest range, including when both dates match."
+  "version": "1.2.6",
+  "body": "Matches the activation control to the proven white-background, blue-text secondary action style and adds an inline contrast fallback."
 }

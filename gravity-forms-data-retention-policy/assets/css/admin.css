@@ -15,17 +15,3 @@
 .gfdrp-button-secondary.button:focus {
 	box-shadow: 0 0 0 1px #fff, 0 0 0 3px #2271b1 !important;
 }
-
-body.wp-admin #wpbody-content .gfdrp-button-primary.button.button-primary {
-	-webkit-text-fill-color: #fff !important;
-	background: #2271b1 !important;
-	border-color: #2271b1 !important;
-	color: #fff !important;
-}
-
-body.wp-admin #wpbody-content .gfdrp-button-primary.button.button-primary:hover,
-body.wp-admin #wpbody-content .gfdrp-button-primary.button.button-primary:focus {
-	background: #135e96 !important;
-	border-color: #135e96 !important;
-	color: #fff !important;
-}

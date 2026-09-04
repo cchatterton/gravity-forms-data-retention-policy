@@ -2,6 +2,11 @@
 
 All notable changes to Gravity Forms Data Retention Policy are recorded here.
 
+## 1.2.6 - 2026-09-04
+
+- Changed the activation control to the same proven white-background, blue-text treatment used by the visible scan control.
+- Added an allow-listed inline contrast fallback for Gravity Forms button overrides.
+
 ## 1.2.5 - 2026-09-04
 
 - Always displayed affected-entry dates as an explicit oldest-to-youngest range, including when both dates match.

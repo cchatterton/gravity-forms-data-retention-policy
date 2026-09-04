@@ -327,7 +327,7 @@ function gfdrp_get_policy_report_html( $report ) {
 		$html .= '</tbody></table>';
 	}
 
-	$html .= '<p><button type="submit" name="action" value="gfdrp_activate_policy" class="button button-primary gfdrp-button-primary" formmethod="post" formaction="' . esc_url( admin_url( 'admin-post.php' ) ) . '" formnovalidate>' . esc_html__( 'Activate Selected Policy Changes', 'gravity-forms-data-retention-policy' ) . '</button></p>';
+	$html .= '<p><button type="submit" name="action" value="gfdrp_activate_policy" class="button gfdrp-button-secondary" formmethod="post" formaction="' . esc_url( admin_url( 'admin-post.php' ) ) . '" formnovalidate style="background:#fff !important;border-color:#2271b1 !important;color:#135e96 !important;font-size:13px !important;opacity:1 !important;text-indent:0 !important;visibility:visible !important;">' . esc_html__( 'Activate Selected Policy Changes', 'gravity-forms-data-retention-policy' ) . '</button></p>';
 
 	return $html;
 }
