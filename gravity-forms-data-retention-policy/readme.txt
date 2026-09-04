@@ -3,7 +3,7 @@ Contributors: alphasys
 Tags: gravity forms, data retention, privacy, gdpr, multisite
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -14,7 +14,7 @@ Enforces a site-wide maximum entry retention policy for every Gravity Forms form
 
 Gravity Forms Data Retention Policy adds a Retention Policy tab to the main Gravity Forms settings screen. The setting is local to each WordPress site, including each site in a multisite network.
 
-The default configuration permanently deletes entries after 28 days, but installing or activating the WordPress plugin does not change forms. Administrators save the configuration, run a read-only impact test, review the affected forms, saved-entry counts, permanent deletions, and File Upload or Post Image counts, then explicitly activate the tested policy. Every affected form is selected by default; unchecked forms remain unchanged and are stored as exceptions to ongoing enforcement. The report notes that Save and Continue drafts are also subject to Gravity Forms retention but are not included in the saved-entry total.
+The default configuration permanently deletes entries after 28 days, but installing or activating the WordPress plugin does not change forms. Administrators save the configuration, run a read-only impact test, review only the forms that would change, then explicitly activate the tested policy. Impact rows include inherited forms that exactly match the active policy and would follow a looser default, plus form status, current policy, saved-entry counts, affected-entry date range, and File Upload or Post Image counts. Every affected form is selected by default; unchecked forms remain unchanged and are stored as exceptions to ongoing enforcement. The report notes that Save and Continue drafts are also subject to Gravity Forms retention but are not included in the saved-entry total.
 
 When a tested policy is activated, forms matching the previously applied policy follow the new setting. A form with a custom policy remains independent unless its policy is looser than the new site ceiling. Gravity Forms performs the scheduled cleanup through its native daily retention task.
 
@@ -42,6 +42,12 @@ Yes. A form may permanently delete entries sooner, but it cannot exceed the site
 No. It configures and enforces Gravity Forms' native personal-data retention fields. Gravity Forms performs cleanup through its daily scheduled task.
 
 == Changelog ==
+
+= 1.2.4 =
+
+* Added form status and affected-entry date ranges to the policy impact table.
+* Removed the redundant Proposed column and explicitly retained inherited forms during policy loosening.
+* Fixed primary activation button contrast.
 
 = 1.2.3 =
 

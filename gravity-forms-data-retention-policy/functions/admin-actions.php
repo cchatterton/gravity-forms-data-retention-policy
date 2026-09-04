@@ -250,6 +250,43 @@ function gfdrp_get_action_notice_html() {
 }
 
 /**
+ * Format an affected-entry date range in the site's timezone.
+ *
+ * @param string $oldest   Oldest UTC entry date.
+ * @param string $youngest Youngest UTC entry date.
+ * @return string
+ */
+function gfdrp_format_entry_date_range( $oldest, $youngest ) {
+	if ( '' === $oldest || '' === $youngest ) {
+		return __( 'No affected entries', 'gravity-forms-data-retention-policy' );
+	}
+
+	$date_format   = get_option( 'date_format', 'F j, Y' );
+	$oldest_date   = wp_date( $date_format, strtotime( $oldest . ' UTC' ) );
+	$youngest_date = wp_date( $date_format, strtotime( $youngest . ' UTC' ) );
+
+	return $oldest_date === $youngest_date
+		? $oldest_date
+		: sprintf( '%1$s – %2$s', $oldest_date, $youngest_date );
+}
+
+/**
+ * Return a display label for a Gravity Forms form status.
+ *
+ * @param string $status Stored status code.
+ * @return string
+ */
+function gfdrp_format_form_status( $status ) {
+	$labels = array(
+		'active'   => __( 'Active', 'gravity-forms-data-retention-policy' ),
+		'inactive' => __( 'Inactive', 'gravity-forms-data-retention-policy' ),
+		'trash'    => __( 'Trash', 'gravity-forms-data-retention-policy' ),
+	);
+
+	return $labels[ $status ] ?? $labels['inactive'];
+}
+
+/**
  * Render the read-only policy impact report.
  *
  * @param array $report Policy report.
@@ -281,17 +318,18 @@ function gfdrp_get_policy_report_html( $report ) {
 	if ( empty( $report['forms'] ) ) {
 		$html .= '<p>' . esc_html__( 'No forms require a policy change.', 'gravity-forms-data-retention-policy' ) . '</p>';
 	} else {
-		$html .= '<table class="widefat striped"><thead><tr><th class="check-column">' . esc_html__( 'Apply defaults', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Form', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Current', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Proposed', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Entries affected', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'With files', 'gravity-forms-data-retention-policy' ) . '</th></tr></thead><tbody>';
+		$html .= '<table class="widefat striped"><thead><tr><th class="check-column">' . esc_html__( 'Apply defaults', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Form', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Status', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Current policy', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Entries affected', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'Affected entry date range', 'gravity-forms-data-retention-policy' ) . '</th><th>' . esc_html__( 'With files', 'gravity-forms-data-retention-policy' ) . '</th></tr></thead><tbody>';
 
 		foreach ( $report['forms'] as $form ) {
-			$form_id = absint( $form['id'] ?? 0 );
-			$html   .= '<tr><th scope="row" class="check-column"><input type="checkbox" name="gfdrp_policy_form_ids[]" value="' . esc_attr( (string) $form_id ) . '" checked aria-label="' . esc_attr( sprintf( __( 'Apply defaults to %s', 'gravity-forms-data-retention-policy' ), (string) $form['title'] ) ) . '"></th><td>' . esc_html( '#' . $form_id . ' ' . $form['title'] ) . '</td><td>' . esc_html( gfdrp_format_policy( $form['from'] ) ) . '</td><td>' . esc_html( gfdrp_format_policy( $form['to'] ) ) . '</td><td>' . esc_html( (string) $form['entries'] ) . '</td><td>' . esc_html( (string) $form['file_entries'] ) . '</td></tr>';
+			$form_id    = absint( $form['id'] ?? 0 );
+			$date_range = gfdrp_format_entry_date_range( (string) ( $form['oldest_entry'] ?? '' ), (string) ( $form['youngest_entry'] ?? '' ) );
+			$html      .= '<tr><th scope="row" class="check-column"><input type="checkbox" name="gfdrp_policy_form_ids[]" value="' . esc_attr( (string) $form_id ) . '" checked aria-label="' . esc_attr( sprintf( __( 'Apply defaults to %s', 'gravity-forms-data-retention-policy' ), (string) $form['title'] ) ) . '"></th><td>' . esc_html( '#' . $form_id . ' ' . $form['title'] ) . '</td><td>' . esc_html( gfdrp_format_form_status( (string) ( $form['status'] ?? '' ) ) ) . '</td><td>' . esc_html( gfdrp_format_policy( $form['from'] ) ) . '</td><td>' . esc_html( (string) $form['entries'] ) . '</td><td>' . esc_html( $date_range ) . '</td><td>' . esc_html( (string) $form['file_entries'] ) . '</td></tr>';
 		}
 
 		$html .= '</tbody></table>';
 	}
 
-	$html .= '<p><button type="submit" name="action" value="gfdrp_activate_policy" class="button button-primary" formmethod="post" formaction="' . esc_url( admin_url( 'admin-post.php' ) ) . '" formnovalidate>' . esc_html__( 'Activate Selected Policy Changes', 'gravity-forms-data-retention-policy' ) . '</button></p>';
+	$html .= '<p><button type="submit" name="action" value="gfdrp_activate_policy" class="button button-primary gfdrp-button-primary" formmethod="post" formaction="' . esc_url( admin_url( 'admin-post.php' ) ) . '" formnovalidate>' . esc_html__( 'Activate Selected Policy Changes', 'gravity-forms-data-retention-policy' ) . '</button></p>';
 
 	return $html;
 }

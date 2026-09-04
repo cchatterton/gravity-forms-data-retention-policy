@@ -1,4 +1,4 @@
 {
-  "version": "1.2.3",
-  "body": "Limits content usage detection to published and draft items and shows their status in active-form scan results."
+  "version": "1.2.4",
+  "body": "Updates the policy impact table with form status and affected-entry date ranges, removes the Proposed column, retains exact active-policy matches during loosening, and fixes primary-button contrast."
 }

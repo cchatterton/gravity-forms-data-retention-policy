@@ -37,14 +37,16 @@ function gfdrp_get_file_field_ids( $form ) {
  *
  * @param array $form          Gravity Forms form object.
  * @param array $target_policy Target retention policy.
- * @return array{entries:int,file_entries:int,error:bool}
+ * @return array{entries:int,file_entries:int,oldest_entry:string,youngest_entry:string,error:bool}
  */
 function gfdrp_audit_form_entries( $form, $target_policy ) {
 	$target_policy = gfdrp_sanitize_settings( $target_policy );
 	$result        = array(
-		'entries'      => 0,
-		'file_entries' => 0,
-		'error'        => false,
+		'entries'        => 0,
+		'file_entries'   => 0,
+		'oldest_entry'   => '',
+		'youngest_entry' => '',
+		'error'          => false,
 	);
 
 	if ( 'retain' === $target_policy['policy'] || empty( $form['id'] ) || ! class_exists( 'GFAPI' ) ) {
@@ -86,6 +88,18 @@ function gfdrp_audit_form_entries( $form, $target_policy ) {
 			}
 
 			foreach ( $entries as $entry ) {
+				$entry_date = (string) ( $entry['date_created'] ?? '' );
+
+				if ( '' !== $entry_date ) {
+					if ( '' === $result['oldest_entry'] || $entry_date < $result['oldest_entry'] ) {
+						$result['oldest_entry'] = $entry_date;
+					}
+
+					if ( '' === $result['youngest_entry'] || $entry_date > $result['youngest_entry'] ) {
+						$result['youngest_entry'] = $entry_date;
+					}
+				}
+
 				foreach ( $field_ids as $field_id ) {
 					if ( ! empty( $entry[ $field_id ] ) ) {
 						++$result['file_entries'];
@@ -147,13 +161,16 @@ function gfdrp_build_policy_report() {
 			: array( 'policy' => 'retain', 'retain_entries_days' => 1 );
 
 		$report['forms'][] = array(
-			'id'           => (int) ( $form['id'] ?? 0 ),
-			'title'        => (string) ( $form['title'] ?? '' ),
-			'from'         => $old_policy,
-			'to'           => $target_form['personalData']['retention'],
-			'entries'      => $entry_impact['entries'],
-			'file_entries' => $entry_impact['file_entries'],
-			'error'        => $entry_impact['error'],
+			'id'             => (int) ( $form['id'] ?? 0 ),
+			'title'          => (string) ( $form['title'] ?? '' ),
+			'status'         => ! empty( $form['is_trash'] ) ? 'trash' : ( ! empty( $form['is_active'] ) ? 'active' : 'inactive' ),
+			'from'           => $old_policy,
+			'to'             => $target_form['personalData']['retention'],
+			'entries'        => $entry_impact['entries'],
+			'file_entries'   => $entry_impact['file_entries'],
+			'oldest_entry'   => $entry_impact['oldest_entry'],
+			'youngest_entry' => $entry_impact['youngest_entry'],
+			'error'          => $entry_impact['error'],
 		);
 		++$report['forms_changed'];
 		$report['entries_affected'] += $entry_impact['entries'];

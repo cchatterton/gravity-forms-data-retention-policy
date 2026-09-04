@@ -2,6 +2,13 @@
 
 All notable changes to Gravity Forms Data Retention Policy are recorded here.
 
+## 1.2.4 - 2026-09-04
+
+- Added form status and oldest-to-youngest affected-entry dates to the policy impact table.
+- Removed the redundant proposed-policy column.
+- Added regression coverage ensuring exact active-policy matches remain in the impact report when the new default is looser.
+- Fixed primary activation button contrast in the Gravity Forms settings interface.
+
 ## 1.2.3 - 2026-09-04
 
 - Limited content usage detection to published and draft items.

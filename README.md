@@ -1,7 +1,7 @@
 # Gravity Forms Data Retention Policy
 
 Author: AlphaSys
-Version: 1.2.3
+Version: 1.2.4
 Status: Production
 
 ## Purpose
@@ -14,7 +14,7 @@ Adds a site-wide retention policy to Gravity Forms and prevents individual forms
 - Defaults to permanently deleting entries after 28 days.
 - Saves policy configuration without changing forms during plugin activation or settings updates.
 - Enforces a two-step read-only test followed by explicit policy activation; activation cannot run without the matching test.
-- Reports forms to be changed, saved entries already due for removal, permanent deletions, and affected entries with File Upload or Post Image values. The UI calls out that Save and Continue drafts are also subject to Gravity Forms retention but are not included in the entry total.
+- Reports only forms changed by the tested policy, including inherited forms that exactly match the active policy and would follow a looser default. Each row shows form status, current policy, saved entries already due for removal, the affected-entry date range, and File Upload or Post Image counts. The UI calls out that Save and Continue drafts are also subject to Gravity Forms retention but are not included in the entry total.
 - Shows an Apply defaults checkbox for every affected form, selected by default. Unchecked forms are retained as site-level policy exceptions and remain outside ongoing enforcement.
 - Moves forms that exactly matched the previously applied site policy to the new policy when the tested policy is activated.
 - Enforces the policy whenever form metadata is saved, including new and imported forms.

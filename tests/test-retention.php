@@ -6,7 +6,7 @@
 declare(strict_types=1);
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'GFDRP_VERSION', '1.2.3' );
+define( 'GFDRP_VERSION', '1.2.4' );
 define( 'GFDRP_PLUGIN_FILE', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/gravity-forms-data-retention-policy.php' );
 define( 'GFDRP_PLUGIN_DIR', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/' );
 define( 'GFDRP_SETTINGS_OPTION', 'gravityformsaddon_gfdrp_settings' );
@@ -279,7 +279,7 @@ foreach ( array( 1, 2 ) as $site_id ) {
 		'Every network site must receive the default policy.'
 	);
 	gfdrp_test_same(
-		'1.2.3',
+		'1.2.4',
 		$gfdrp_test_options[ $site_id ][ GFDRP_SITE_VERSION_OPTION ],
 		'Every network site must be marked initialized.'
 	);
@@ -394,14 +394,30 @@ $audit_form = array(
 		array( 'id' => 6, 'type' => 'text' ),
 	),
 );
+$oldest_affected   = gmdate( 'Y-m-d H:i:s', time() - 40 * DAY_IN_SECONDS );
+$youngest_affected = gmdate( 'Y-m-d H:i:s', time() - 35 * DAY_IN_SECONDS );
 $gfdrp_test_entries = array(
-	array( 'form_id' => 20, 'status' => 'active', 'date_created' => gmdate( 'Y-m-d H:i:s', time() - 40 * DAY_IN_SECONDS ), '5' => 'upload.pdf' ),
-	array( 'form_id' => 20, 'status' => 'spam', 'date_created' => gmdate( 'Y-m-d H:i:s', time() - 35 * DAY_IN_SECONDS ), '5' => '' ),
+	array( 'form_id' => 20, 'status' => 'active', 'date_created' => $oldest_affected, '5' => 'upload.pdf' ),
+	array( 'form_id' => 20, 'status' => 'spam', 'date_created' => $youngest_affected, '5' => '' ),
 	array( 'form_id' => 20, 'status' => 'active', 'date_created' => gmdate( 'Y-m-d H:i:s', time() - 5 * DAY_IN_SECONDS ), '5' => 'new.pdf' ),
 );
 $entry_audit = gfdrp_audit_form_entries( $audit_form, array( 'policy' => 'delete', 'retain_entries_days' => 28 ) );
 gfdrp_test_same( 2, $entry_audit['entries'], 'The audit must count entries already beyond the retention period.' );
 gfdrp_test_same( 1, $entry_audit['file_entries'], 'The audit must identify affected entries with file uploads.' );
+gfdrp_test_same( $oldest_affected, $entry_audit['oldest_entry'], 'The audit must report the oldest affected entry.' );
+gfdrp_test_same( $youngest_affected, $entry_audit['youngest_entry'], 'The audit must report the youngest affected entry.' );
+
+$gfdrp_test_options[1][ GFDRP_SETTINGS_OPTION ]       = $new_policy;
+$gfdrp_test_options[1][ GFDRP_APPLIED_POLICY_OPTION ] = $old_policy;
+$gfdrp_test_forms[1] = array(
+	array( 'id' => 30, 'title' => 'Inherited', 'is_active' => true, 'is_trash' => false, 'personalData' => array( 'retention' => $old_policy ) ),
+	array( 'id' => 31, 'title' => 'Custom strict', 'is_active' => false, 'is_trash' => false, 'personalData' => array( 'retention' => array( 'policy' => 'delete', 'retain_entries_days' => 7 ) ) ),
+);
+$looser_report = gfdrp_build_policy_report();
+gfdrp_test_same( 1, $looser_report['forms_changed'], 'The report must include only forms impacted by the tested policy.' );
+gfdrp_test_same( 30, $looser_report['forms'][0]['id'], 'An exact match to the active policy must be included when the default is loosened.' );
+gfdrp_test_same( 'active', $looser_report['forms'][0]['status'], 'The impact report must include form status.' );
+gfdrp_test_same( $new_policy, $looser_report['forms'][0]['to'], 'An inherited form must show the looser tested policy as its target.' );
 
 $gfdrp_test_forms[1] = array(
 	array( 'id' => 3, 'title' => 'Embedded', 'is_active' => true, 'is_trash' => false ),
