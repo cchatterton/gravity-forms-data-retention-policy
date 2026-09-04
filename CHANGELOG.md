@@ -2,6 +2,10 @@
 
 All notable changes to Gravity Forms Data Retention Policy are recorded here.
 
+## 1.2.1 - 2026-09-04
+
+- Fixed secondary action button contrast in the Gravity Forms settings interface.
+
 ## 1.2.0 - 2026-09-04
 
 - Made policy activation an enforced two-step test-and-activate workflow.

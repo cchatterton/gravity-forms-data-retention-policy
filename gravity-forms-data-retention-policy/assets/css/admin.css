@@ -1,0 +1,17 @@
+.gfdrp-button-secondary.button,
+.gfdrp-button-secondary.button:visited {
+	background: #fff !important;
+	border-color: #2271b1 !important;
+	color: #135e96 !important;
+}
+
+.gfdrp-button-secondary.button:hover,
+.gfdrp-button-secondary.button:focus {
+	background: #f0f6fc !important;
+	border-color: #135e96 !important;
+	color: #0a4b78 !important;
+}
+
+.gfdrp-button-secondary.button:focus {
+	box-shadow: 0 0 0 1px #fff, 0 0 0 3px #2271b1 !important;
+}

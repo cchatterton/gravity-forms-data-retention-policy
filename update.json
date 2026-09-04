@@ -1,4 +1,4 @@
 {
-  "version": "1.2.0",
-  "body": "Adds enforced two-step policy activation with per-form selections and persistent exceptions. The active-form scan now reports every form and its detected usage locations, preselecting only unused forms for scan-gated deactivation."
+  "version": "1.2.1",
+  "body": "Fixes secondary action button contrast in the Gravity Forms settings interface."
 }

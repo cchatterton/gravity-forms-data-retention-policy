@@ -84,6 +84,27 @@ function gfdrp_is_post_request() {
 }
 
 /**
+ * Load styles only on this Gravity Forms settings tab.
+ */
+function gfdrp_enqueue_admin_styles() {
+	$page    = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+	$subview = isset( $_GET['subview'] ) ? sanitize_key( wp_unslash( $_GET['subview'] ) ) : '';
+
+	if ( 'gf_settings' !== $page || 'gfdrp' !== $subview ) {
+		return;
+	}
+
+	wp_enqueue_style(
+		'gfdrp-admin',
+		plugins_url( 'assets/css/admin.css', GFDRP_PLUGIN_FILE ),
+		array(),
+		GFDRP_VERSION
+	);
+}
+
+add_action( 'admin_enqueue_scripts', 'gfdrp_enqueue_admin_styles' );
+
+/**
  * Generate and retain a read-only policy impact report.
  */
 function gfdrp_handle_test_policy() {
@@ -324,7 +345,7 @@ function gfdrp_get_unused_forms_report_html( $report ) {
 	$html .= '</tbody></table>';
 
 	if ( $candidate_count ) {
-		$html .= '<p><button type="submit" name="action" value="gfdrp_deactivate_unused_forms" class="button" formmethod="post" formaction="' . esc_url( admin_url( 'admin-post.php' ) ) . '" formnovalidate>' . esc_html__( 'Deactivate Selected Unused Forms', 'gravity-forms-data-retention-policy' ) . '</button></p>';
+		$html .= '<p><button type="submit" name="action" value="gfdrp_deactivate_unused_forms" class="button gfdrp-button-secondary" formmethod="post" formaction="' . esc_url( admin_url( 'admin-post.php' ) ) . '" formnovalidate>' . esc_html__( 'Deactivate Selected Unused Forms', 'gravity-forms-data-retention-policy' ) . '</button></p>';
 	} else {
 		$html .= '<p>' . esc_html__( 'Every active form has a detected usage location.', 'gravity-forms-data-retention-policy' ) . '</p>';
 	}
@@ -359,10 +380,10 @@ function gfdrp_get_policy_controls_html() {
 		}
 	}
 	$html .= '<p>' . esc_html__( 'Click Save Settings first. Saving settings does not change any forms. Then run Test Policy, review the impact, and activate the tested policy.', 'gravity-forms-data-retention-policy' ) . '</p>';
-	$html .= '<p><a class="button" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_test_policy' ) ) . '">' . esc_html__( 'Test Policy', 'gravity-forms-data-retention-policy' ) . '</a> ';
+	$html .= '<p><a class="button gfdrp-button-secondary" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_test_policy' ) ) . '">' . esc_html__( 'Test Policy', 'gravity-forms-data-retention-policy' ) . '</a> ';
 
 	if ( $is_active ) {
-		$html .= '<a class="button" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_deactivate_policy' ) ) . '">' . esc_html__( 'Deactivate Policy', 'gravity-forms-data-retention-policy' ) . '</a>';
+		$html .= '<a class="button gfdrp-button-secondary" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_deactivate_policy' ) ) . '">' . esc_html__( 'Deactivate Policy', 'gravity-forms-data-retention-policy' ) . '</a>';
 	}
 
 	$html .= '</p>';
@@ -373,7 +394,7 @@ function gfdrp_get_policy_controls_html() {
 
 	$html .= '<hr><h4>' . esc_html__( 'Unused active forms', 'gravity-forms-data-retention-policy' ) . '</h4>';
 	$html .= '<p>' . esc_html__( 'The scan checks posts, pages, custom post content and metadata, Gravity Forms blocks and shortcodes, common widgets, theme settings, and active theme PHP files. It cannot prove that a form is not loaded dynamically by a plugin, API call, or external application.', 'gravity-forms-data-retention-policy' ) . '</p>';
-	$html .= '<p><a class="button" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_test_unused_forms' ) ) . '">' . esc_html__( 'Scan Active Forms', 'gravity-forms-data-retention-policy' ) . '</a></p>';
+	$html .= '<p><a class="button gfdrp-button-secondary" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_test_unused_forms' ) ) . '">' . esc_html__( 'Scan Active Forms', 'gravity-forms-data-retention-policy' ) . '</a></p>';
 	$html .= gfdrp_get_unused_forms_report_html( $unused_report );
 
 	return $html;

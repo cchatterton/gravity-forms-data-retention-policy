@@ -6,7 +6,7 @@
 declare(strict_types=1);
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'GFDRP_VERSION', '1.2.0' );
+define( 'GFDRP_VERSION', '1.2.1' );
 define( 'GFDRP_PLUGIN_FILE', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/gravity-forms-data-retention-policy.php' );
 define( 'GFDRP_PLUGIN_DIR', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/' );
 define( 'GFDRP_SETTINGS_OPTION', 'gravityformsaddon_gfdrp_settings' );
@@ -268,7 +268,7 @@ foreach ( array( 1, 2 ) as $site_id ) {
 		'Every network site must receive the default policy.'
 	);
 	gfdrp_test_same(
-		'1.2.0',
+		'1.2.1',
 		$gfdrp_test_options[ $site_id ][ GFDRP_SITE_VERSION_OPTION ],
 		'Every network site must be marked initialized.'
 	);
