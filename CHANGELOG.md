@@ -2,6 +2,11 @@
 
 All notable changes to Gravity Forms Data Retention Policy are recorded here.
 
+## 1.2.3 - 2026-09-04
+
+- Limited content usage detection to published and draft items.
+- Added Published or Draft status to every detected content location.
+
 ## 1.2.2 - 2026-09-04
 
 - Simplified the policy controls to a compact status and actions row.

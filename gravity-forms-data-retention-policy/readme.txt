@@ -3,7 +3,7 @@ Contributors: alphasys
 Tags: gravity forms, data retention, privacy, gdpr, multisite
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -18,7 +18,7 @@ The default configuration permanently deletes entries after 28 days, but install
 
 When a tested policy is activated, forms matching the previously applied policy follow the new setting. A form with a custom policy remains independent unless its policy is looser than the new site ceiling. Gravity Forms performs the scheduled cleanup through its native daily retention task.
 
-The settings page can also scan active forms for references in site content, post metadata, common widgets, theme settings, and active theme files. The results show every active form and its detected usage locations. Forms with no detected usage are selected by default for a separate deactivation step, which performs another server-side scan before making changes. Dynamic plugin code and external applications cannot be conclusively detected.
+The settings page can also scan active forms for references in published and draft site content, post metadata, common widgets, theme settings, and active theme files. Content locations are labelled Published or Draft; all other content statuses are ignored. The results show every active form and its detected usage locations. Forms with no detected usage are selected by default for a separate deactivation step, which performs another server-side scan before making changes. Dynamic plugin code and external applications cannot be conclusively detected.
 
 == Installation ==
 
@@ -42,6 +42,10 @@ Yes. A form may permanently delete entries sooner, but it cannot exceed the site
 No. It configures and enforces Gravity Forms' native personal-data retention fields. Gravity Forms performs cleanup through its daily scheduled task.
 
 == Changelog ==
+
+= 1.2.3 =
+
+* Limited content usage detection to published and draft items and displayed their status in scan results.
 
 = 1.2.2 =
 

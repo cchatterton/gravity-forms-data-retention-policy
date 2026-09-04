@@ -108,7 +108,7 @@ function gfdrp_find_form_usage() {
 	$post_ids   = get_posts(
 		array(
 			'post_type'              => array_values( $post_types ),
-			'post_status'            => 'any',
+			'post_status'            => array( 'publish', 'draft' ),
 			'posts_per_page'         => -1,
 			'fields'                 => 'ids',
 			'orderby'                => 'ID',
@@ -123,16 +123,19 @@ function gfdrp_find_form_usage() {
 	foreach ( $post_ids as $post_id ) {
 		$post = get_post( $post_id );
 
-		if ( ! $post || in_array( $post->post_status, array( 'trash', 'auto-draft' ), true ) ) {
+		if ( ! $post || ! in_array( $post->post_status, array( 'publish', 'draft' ), true ) ) {
 			continue;
 		}
 
-		$post_type  = (string) ( $post->post_type ?? 'content' );
-		$post_title = (string) ( $post->post_title ?? '' );
-		$post_title = '' !== $post_title ? $post_title : __( '(untitled)', 'gravity-forms-data-retention-policy' );
-		$label      = sprintf( '%1$s: %2$s (#%3$d)', ucfirst( $post_type ), $post_title, (int) $post_id );
-		$url        = function_exists( 'get_edit_post_link' ) ? (string) get_edit_post_link( $post_id, 'raw' ) : '';
-		$ids        = array_merge(
+		$post_type    = (string) ( $post->post_type ?? 'content' );
+		$post_title   = (string) ( $post->post_title ?? '' );
+		$post_title   = '' !== $post_title ? $post_title : __( '(untitled)', 'gravity-forms-data-retention-policy' );
+		$status_label = 'publish' === $post->post_status
+			? __( 'Published', 'gravity-forms-data-retention-policy' )
+			: __( 'Draft', 'gravity-forms-data-retention-policy' );
+		$label        = sprintf( '%1$s: %2$s (#%3$d) — %4$s', ucfirst( $post_type ), $post_title, (int) $post_id, $status_label );
+		$url          = function_exists( 'get_edit_post_link' ) ? (string) get_edit_post_link( $post_id, 'raw' ) : '';
+		$ids          = array_merge(
 			gfdrp_extract_form_ids( $post->post_content ),
 			gfdrp_extract_form_ids_from_blocks( parse_blocks( $post->post_content ) ),
 			gfdrp_extract_form_ids( get_post_meta( $post_id ) )

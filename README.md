@@ -1,7 +1,7 @@
 # Gravity Forms Data Retention Policy
 
 Author: AlphaSys
-Version: 1.2.2
+Version: 1.2.3
 Status: Production
 
 ## Purpose
@@ -19,7 +19,7 @@ Adds a site-wide retention policy to Gravity Forms and prevents individual forms
 - Moves forms that exactly matched the previously applied site policy to the new policy when the tested policy is activated.
 - Enforces the policy whenever form metadata is saved, including new and imported forms.
 - Preserves form-level policies that are stricter than the site policy.
-- Scans content, metadata, widgets, theme settings, and active theme files, then reports every active form and its detected usage locations.
+- Scans published and draft content, metadata, widgets, theme settings, and active theme files, then reports every active form and its detected usage locations. Content locations show whether the item is Published or Draft; other content statuses are ignored.
 - Preselects only forms with no detected usage for deactivation and requires the scan before the deactivation action can run.
 - Stores settings independently on each site in a multisite network.
 - Supports single-site or network activation.

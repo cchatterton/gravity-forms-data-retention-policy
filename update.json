@@ -1,4 +1,4 @@
 {
-  "version": "1.2.2",
-  "body": "Simplifies the policy controls and limits test and scan reports to the immediate page experience instead of preloading previous results."
+  "version": "1.2.3",
+  "body": "Limits content usage detection to published and draft items and shows their status in active-form scan results."
 }

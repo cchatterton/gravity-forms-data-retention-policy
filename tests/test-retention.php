@@ -6,7 +6,7 @@
 declare(strict_types=1);
 
 define( 'ABSPATH', __DIR__ . '/' );
-define( 'GFDRP_VERSION', '1.2.2' );
+define( 'GFDRP_VERSION', '1.2.3' );
 define( 'GFDRP_PLUGIN_FILE', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/gravity-forms-data-retention-policy.php' );
 define( 'GFDRP_PLUGIN_DIR', dirname( __DIR__ ) . '/gravity-forms-data-retention-policy/' );
 define( 'GFDRP_SETTINGS_OPTION', 'gravityformsaddon_gfdrp_settings' );
@@ -101,15 +101,26 @@ function get_post_types( $arguments = array(), $output = 'names' ) {
 }
 
 function get_posts( $arguments = array() ) {
-	unset( $arguments );
-	return array( 101 );
+	if ( array( 'publish', 'draft' ) !== $arguments['post_status'] ) {
+		throw new RuntimeException( 'The usage scan must request published and draft content only.' );
+	}
+
+	return array( 101, 102, 103 );
 }
 
 function get_post( $post_id ) {
+	$posts = array(
+		101 => array( 'post_status' => 'publish', 'post_title' => 'Welcome', 'post_type' => 'page', 'post_content' => '[gravityform id="3" title="false"]' ),
+		102 => array( 'post_status' => 'private', 'post_title' => 'Private', 'post_type' => 'page', 'post_content' => '[gravityform id="4" title="false"]' ),
+		103 => array( 'post_status' => 'draft', 'post_title' => 'Coming Soon', 'post_type' => 'page', 'post_content' => '[gravityform id="5" title="false"]' ),
+	);
+
 	return (object) array(
 		'ID'           => $post_id,
-		'post_status'  => 'publish',
-		'post_content' => '[gravityform id="3" title="false"]',
+		'post_status'  => $posts[ $post_id ]['post_status'],
+		'post_title'   => $posts[ $post_id ]['post_title'],
+		'post_type'    => $posts[ $post_id ]['post_type'],
+		'post_content' => $posts[ $post_id ]['post_content'],
 	);
 }
 
@@ -268,7 +279,7 @@ foreach ( array( 1, 2 ) as $site_id ) {
 		'Every network site must receive the default policy.'
 	);
 	gfdrp_test_same(
-		'1.2.2',
+		'1.2.3',
 		$gfdrp_test_options[ $site_id ][ GFDRP_SITE_VERSION_OPTION ],
 		'Every network site must be marked initialized.'
 	);
@@ -395,15 +406,19 @@ gfdrp_test_same( 1, $entry_audit['file_entries'], 'The audit must identify affec
 $gfdrp_test_forms[1] = array(
 	array( 'id' => 3, 'title' => 'Embedded', 'is_active' => true, 'is_trash' => false ),
 	array( 'id' => 4, 'title' => 'Not Referenced', 'is_active' => true, 'is_trash' => false ),
+	array( 'id' => 5, 'title' => 'Draft Page', 'is_active' => true, 'is_trash' => false ),
 );
 $unused_report = gfdrp_build_unused_forms_report();
-gfdrp_test_same( 2, count( $unused_report['forms'] ), 'The usage scan must report every active form.' );
+gfdrp_test_same( 3, count( $unused_report['forms'] ), 'The usage scan must report every active form.' );
 gfdrp_test_same( true, $unused_report['forms'][0]['in_use'], 'A referenced form must be marked in use.' );
-gfdrp_test_same( 'Content: (untitled) (#101)', $unused_report['forms'][0]['uses'][0]['label'], 'The usage scan must identify where a form is referenced.' );
-gfdrp_test_same( false, $unused_report['forms'][1]['in_use'], 'An unreferenced active form must be preselected as unused.' );
+gfdrp_test_same( 'Page: Welcome (#101) — Published', $unused_report['forms'][0]['uses'][0]['label'], 'The usage scan must identify a published usage location.' );
+gfdrp_test_same( false, $unused_report['forms'][1]['in_use'], 'A private-page reference must not count as usage.' );
+gfdrp_test_same( true, $unused_report['forms'][2]['in_use'], 'A draft-page reference must count as usage.' );
+gfdrp_test_same( 'Page: Coming Soon (#103) — Draft', $unused_report['forms'][2]['uses'][0]['label'], 'The usage scan must identify a draft usage location.' );
 $deactivation_result = gfdrp_deactivate_unused_forms( array( 3, 4 ) );
 gfdrp_test_same( 1, $deactivation_result['deactivated'], 'The unused-form action must deactivate only the reported form.' );
 gfdrp_test_same( true, $gfdrp_test_forms[1][0]['is_active'], 'A referenced form must remain active.' );
 gfdrp_test_same( false, $gfdrp_test_forms[1][1]['is_active'], 'An unreferenced form must be deactivated.' );
+gfdrp_test_same( true, $gfdrp_test_forms[1][2]['is_active'], 'A form referenced by a draft page must remain active.' );
 
 echo "Retention and multisite tests passed.\n";

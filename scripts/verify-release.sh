@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PLUGIN_SLUG="gravity-forms-data-retention-policy"
-EXPECTED_VERSION="1.2.2"
+EXPECTED_VERSION="1.2.3"
 REPOSITORY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLUGIN_DIR="$REPOSITORY_DIR/$PLUGIN_SLUG"
 MAIN_FILE="$PLUGIN_DIR/$PLUGIN_SLUG.php"
@@ -13,7 +13,7 @@ grep -q "^ \* Version: $EXPECTED_VERSION$" "$MAIN_FILE"
 grep -q '^ \* Requires at least: 6.0$' "$MAIN_FILE"
 grep -q "define( 'GFDRP_VERSION', '$EXPECTED_VERSION' );" "$MAIN_FILE"
 grep -q "^Stable tag: $EXPECTED_VERSION$" "$PLUGIN_DIR/readme.txt"
-grep -q '"version": "1.2.2"' "$REPOSITORY_DIR/update.json"
+grep -q '"version": "1.2.3"' "$REPOSITORY_DIR/update.json"
 grep -q '^ \* Update URI: https://github.com/cchatterton/gravity-forms-data-retention-policy$' "$MAIN_FILE"
 grep -q '^ \* License: GPL v2 or later$' "$MAIN_FILE"
 
