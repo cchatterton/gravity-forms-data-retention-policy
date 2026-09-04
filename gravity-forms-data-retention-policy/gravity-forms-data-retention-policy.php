@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Gravity Forms Data Retention Policy
  * Description: Enforces a site-wide maximum retention policy across Gravity Forms entries.
- * Version: 1.2.1
+ * Version: 1.2.2
  * Requires at least: 6.0
  * Requires PHP: 8.1
  * Update URI: https://github.com/cchatterton/gravity-forms-data-retention-policy
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'GFDRP_VERSION', '1.2.1' );
+define( 'GFDRP_VERSION', '1.2.2' );
 define( 'GFDRP_PLUGIN_FILE', __FILE__ );
 define( 'GFDRP_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GFDRP_SETTINGS_OPTION', 'gravityformsaddon_gfdrp_settings' );

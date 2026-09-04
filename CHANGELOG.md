@@ -2,6 +2,12 @@
 
 All notable changes to Gravity Forms Data Retention Policy are recorded here.
 
+## 1.2.2 - 2026-09-04
+
+- Simplified the policy controls to a compact status and actions row.
+- Removed verbose applied-policy, exception, and instructional copy from the default view.
+- Limited test and scan reports to the immediate result page and cleared them on a normal revisit.
+
 ## 1.2.1 - 2026-09-04
 
 - Fixed secondary action button contrast in the Gravity Forms settings interface.

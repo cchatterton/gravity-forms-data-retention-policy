@@ -3,7 +3,7 @@ Contributors: alphasys
 Tags: gravity forms, data retention, privacy, gdpr, multisite
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -42,6 +42,10 @@ Yes. A form may permanently delete entries sooner, but it cannot exceed the site
 No. It configures and enforces Gravity Forms' native personal-data retention fields. Gravity Forms performs cleanup through its daily scheduled task.
 
 == Changelog ==
+
+= 1.2.2 =
+
+* Simplified the policy controls and made test and scan reports page-session-only.
 
 = 1.2.1 =
 

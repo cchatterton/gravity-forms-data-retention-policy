@@ -1,4 +1,4 @@
 {
-  "version": "1.2.1",
-  "body": "Fixes secondary action button contrast in the Gravity Forms settings interface."
+  "version": "1.2.2",
+  "body": "Simplifies the policy controls and limits test and scan reports to the immediate page experience instead of preloading previous results."
 }

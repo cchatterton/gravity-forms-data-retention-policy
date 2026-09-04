@@ -363,24 +363,24 @@ function gfdrp_get_policy_controls_html() {
 	$status_label   = $is_active
 		? __( 'Active', 'gravity-forms-data-retention-policy' )
 		: __( 'Inactive', 'gravity-forms-data-retention-policy' );
-	$policy_report  = get_transient( gfdrp_report_key( 'policy_report' ) );
-	$unused_report  = get_transient( gfdrp_report_key( 'unused_report' ) );
-	$current        = gfdrp_get_site_policy();
+	$page_result   = isset( $_GET['gfdrp_result'] ) ? sanitize_key( wp_unslash( $_GET['gfdrp_result'] ) ) : '';
+	$show_policy   = in_array( $page_result, array( 'policy_tested', 'activation_failed' ), true );
+	$show_unused   = 'unused_tested' === $page_result;
+	$policy_report = $show_policy ? get_transient( gfdrp_report_key( 'policy_report' ) ) : false;
+	$unused_report = $show_unused ? get_transient( gfdrp_report_key( 'unused_report' ) ) : false;
+	$current       = gfdrp_get_site_policy();
+
+	if ( ! $show_policy ) {
+		delete_transient( gfdrp_report_key( 'policy_report' ) );
+	}
+
+	if ( ! $show_unused ) {
+		delete_transient( gfdrp_report_key( 'unused_report' ) );
+	}
+
 	$report_matches = is_array( $policy_report ) && ( $policy_report['target_policy'] ?? null ) === $current;
 	$html           = gfdrp_get_action_notice_html();
-
-	$html .= '<p><strong>' . esc_html__( 'Status:', 'gravity-forms-data-retention-policy' ) . '</strong> ' . esc_html( $status_label ) . '</p>';
-
-	if ( $is_active ) {
-		$html .= '<p><strong>' . esc_html__( 'Applied policy:', 'gravity-forms-data-retention-policy' ) . '</strong> ' . esc_html( gfdrp_format_policy( gfdrp_get_applied_policy() ) ) . '</p>';
-		$excluded_ids = gfdrp_get_excluded_form_ids();
-
-		if ( $excluded_ids ) {
-			$html .= '<p><strong>' . esc_html__( 'Policy exceptions:', 'gravity-forms-data-retention-policy' ) . '</strong> ' . esc_html( sprintf( __( 'Forms %s remain unchanged and are excluded from ongoing enforcement.', 'gravity-forms-data-retention-policy' ), implode( ', ', array_map( 'strval', $excluded_ids ) ) ) ) . '</p>';
-		}
-	}
-	$html .= '<p>' . esc_html__( 'Click Save Settings first. Saving settings does not change any forms. Then run Test Policy, review the impact, and activate the tested policy.', 'gravity-forms-data-retention-policy' ) . '</p>';
-	$html .= '<p><a class="button gfdrp-button-secondary" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_test_policy' ) ) . '">' . esc_html__( 'Test Policy', 'gravity-forms-data-retention-policy' ) . '</a> ';
+	$html          .= '<p><strong>' . esc_html( $status_label ) . '</strong> &nbsp; <a class="button gfdrp-button-secondary" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_test_policy' ) ) . '">' . esc_html__( 'Test Policy', 'gravity-forms-data-retention-policy' ) . '</a> ';
 
 	if ( $is_active ) {
 		$html .= '<a class="button gfdrp-button-secondary" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_deactivate_policy' ) ) . '">' . esc_html__( 'Deactivate Policy', 'gravity-forms-data-retention-policy' ) . '</a>';
@@ -392,8 +392,8 @@ function gfdrp_get_policy_controls_html() {
 		$html .= gfdrp_get_policy_report_html( $policy_report );
 	}
 
-	$html .= '<hr><h4>' . esc_html__( 'Unused active forms', 'gravity-forms-data-retention-policy' ) . '</h4>';
-	$html .= '<p>' . esc_html__( 'The scan checks posts, pages, custom post content and metadata, Gravity Forms blocks and shortcodes, common widgets, theme settings, and active theme PHP files. It cannot prove that a form is not loaded dynamically by a plugin, API call, or external application.', 'gravity-forms-data-retention-policy' ) . '</p>';
+	$html .= '<hr><h4>' . esc_html__( 'Active forms', 'gravity-forms-data-retention-policy' ) . '</h4>';
+	$html .= '<p class="description">' . esc_html__( 'Dynamic or external form usage may not be detected.', 'gravity-forms-data-retention-policy' ) . '</p>';
 	$html .= '<p><a class="button gfdrp-button-secondary" href="' . esc_url( gfdrp_admin_action_url( 'gfdrp_test_unused_forms' ) ) . '">' . esc_html__( 'Scan Active Forms', 'gravity-forms-data-retention-policy' ) . '</a></p>';
 	$html .= gfdrp_get_unused_forms_report_html( $unused_report );
 

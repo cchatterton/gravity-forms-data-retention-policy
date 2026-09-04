@@ -99,7 +99,7 @@ final class GFDRP_Addon extends GFAddOn {
 					),
 					array(
 						'name'  => 'policy_controls',
-						'label' => esc_html__( 'Policy status and activation', 'gravity-forms-data-retention-policy' ),
+						'label' => esc_html__( 'Policy', 'gravity-forms-data-retention-policy' ),
 						'type'  => 'policy_controls',
 					),
 				),
