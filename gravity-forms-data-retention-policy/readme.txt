@@ -1,10 +1,10 @@
 === Gravity Forms Data Retention Policy ===
-Contributors: alphasys
+Contributors:
 Tags: gravity forms, data retention, privacy, gdpr, multisite
-Requires at least: 6.0
-Tested up to: 7.1
-Stable tag: 1.2.6
-Requires PHP: 8.1
+Requires at least: 7.0
+Tested up to: 7.0
+Stable tag: 1.2.7
+Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,6 +42,11 @@ Yes. A form may permanently delete entries sooner, but it cannot exceed the site
 No. It configures and enforces Gravity Forms' native personal-data retention fields. Gravity Forms performs cleanup through its daily scheduled task.
 
 == Changelog ==
+
+= 1.2.7 =
+* Migrate update discovery to AS Update Controller. Preserve feature settings and plugin identity.
+* Match WordPress 7.0 / PHP 7.4 requirements.
+
 
 = 1.2.6 =
 

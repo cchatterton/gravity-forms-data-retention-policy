@@ -13,5 +13,5 @@
 }
 
 .gfdrp-button-secondary.button:focus {
-	box-shadow: 0 0 0 1px #fff, 0 0 0 3px #2271b1 !important;
+	box-shadow: 0 0 0 0.0625rem #fff, 0 0 0 0.1875rem #2271b1 !important;
 }
